@@ -1,0 +1,185 @@
+#https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/board-esp32-lyrat-v4.3.html
+
+substitutions:
+   devicename: lira-t
+   upper_devicename: lira-t
+
+
+esphome:
+  name: "${devicename}"
+  # name_add_mac_suffix: true
+  project:
+    name: LiraT V4.3
+    version: "1.0"
+
+esp32:
+  board: esp-wrover-kit
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API 
+api:
+  password: !secret api_pass
+#Включаем загрузку по воздуху
+ota:
+  password: !secret ota_pass
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_pass
+
+#Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${devicename} Fallback"
+    password: !secret back_pass
+
+captive_portal:
+
+i2c:
+  sda: GPIO18
+  scl: GPIO23
+
+dashboard_import:
+  package_import_url: github://esphome/media-players/LiraT-V4.3.yaml@main
+
+
+# esp32_touch:
+# improv_serial:
+
+external_components:
+  - source: github://pr#3552
+    components: [es8388]
+    refresh: 0s
+
+media_player:
+  - platform: i2s_audio
+    name: ${devicename}
+    dac_type: external
+    i2s_lrclk_pin: GPIO25
+    i2s_dout_pin: GPIO26
+    i2s_bclk_pin: GPIO5
+    mode: stereo
+    id: lira
+    mute_pin:
+      number: GPIO21
+      inverted: true
+
+es8388:
+
+sensor:
+  - platform: wifi_signal
+    name: ${upper_devicename} Wifi
+    update_interval: 60s   
+    
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: ${upper_devicename} IP Address
+    ssid:
+      name: ${upper_devicename} SSID
+    mac_address:
+      name: ${upper_devicename} Mac
+
+binary_sensor:
+  # The sound does not work after switching on esp32_touch
+  # - platform: esp32_touch
+  #   pin: GPIO27  
+  #   threshold: 1000
+  #   sleep_duration: 1ms
+  #   name: ${upper_devicename} Volume Up
+  #   on_click:
+  #     - media_player.volume_up:
+  #         id: lira
+   
+
+  # - platform: esp32_touch
+  #   pin: GPIO33  
+  #   threshold: 1000
+  #   name: ${upper_devicename} Play Button
+  #   on_click:
+  #     - media_player.toggle: 
+  #         id: lira
+      
+  # - platform: esp32_touch
+  #   pin: GPIO32  
+  #   threshold: 1000
+  #   name: ${upper_devicename} Set Button
+  #   on_click:
+  #     - media_player.volume_down:
+  #         id: lira
+  
+  # The button Volume Down doesn't work 
+  # - platform: esp32_touch
+  #   pin: GPIO13
+  #   threshold: 1000
+  #   name: ${upper_devicename} Volume Down
+  #   on_click:
+  #     - media_player.volume_down:
+  #         id: lira
+                
+  - platform: gpio
+    pin:
+      number: SVP
+      inverted: true
+      mode:
+        input: true
+    name: ${upper_devicename} Volume UP
+    on_click:
+      - media_player.volume_up: 
+          id: lira
+      
+  - platform: gpio
+    pin:
+      number: SVN
+      inverted: true
+      mode:
+        input: true
+    name: ${upper_devicename} Volume Down
+    on_click:
+      - media_player.volume_down: 
+          id: lira
+
+  - platform: gpio
+    pin:
+      number: GPIO2
+      inverted: true
+      mode:
+        input: true
+    name: ${upper_devicename} Play
+    on_click:
+       - media_player.toggle: 
+           id: lira
+          
+  - platform: gpio
+    pin:
+      number: GPIO19
+      inverted: true
+      mode:
+        input: true
+    name: ${upper_devicename} jack insert
+ 
+  # The Aux signal doesn't work 
+  # - platform: gpio
+  #   pin:
+  #     number: GPIO12
+  #     inverted: true
+  #     mode:
+  #       input: true
+  #   name: ${upper_devicename} Aux signal
+
+light:
+  - platform: status_led
+    name: ${upper_devicename} led
+    pin: GPIO22
+    id: stat_led
+    
+  - platform: fastled_clockless
+    name: "light-music"
+    chipset: WS2811
+    pin: GPIO15
+    num_leds: 50
+    rgb_order: RGB
+    
